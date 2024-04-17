@@ -1,0 +1,103 @@
+{
+	"name": "cno-read-by-block",
+	"version": "0.0.0",
+	"description": "Micropackage: use NodeJS's promise API to asynchronously read a file by its optimal blocksize.",
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/Anadian/cno-read-by-block.git"
+	},
+	"author": "Anadian",
+	"license": "MIT",
+	"type": "module",
+	"exports": {
+		".": "./src/lib.js"
+	},
+	"engines": {
+		"node": ">=18"
+	},
+	"bugs": {
+		"url": "https://github.com/Anadian/cno-read-by-block/issues"
+	},
+	"homepage": "https://github.com/Anadian/cno-read-by-block#readme",
+	"keywords": [
+		"libre",
+		"free",
+		"open",
+		"mit"
+	],
+	"scripts": {
+		"test": "node --test ./src/lib.test.js",
+		"coverage": "c8 pnpm test",
+		"coverage-report": "c8 report -r=text-lcov > coverage/lcov.txt",
+		"do-ci": "pnpm coverage && pnpm coverage-report",
+		"lint": "eslint ./src/main.js",
+		"generate-docs": "scripts/generate-docs.js",
+		"update-config": "hjson -j ci/github-actions.hjson | json2yaml -o .github/workflows/ci.yml && git change 'chore: Updated GitHub Actions.'",
+		"update-deps": "npm-check-updates -u",
+		"release": "standard-version",
+		"publish-release": "git push --follow-tags origin main && pnpm publish"
+	},
+	"standard-version": {
+		"types": [
+			{
+				"type": "build",
+				"section": "Build",
+				"hidden": false
+			},
+			{
+				"type": "ci",
+				"section": "Continuous Integration",
+				"hidden": false
+			},
+			{
+				"type": "chore",
+				"section": "Chores",
+				"hidden": false
+			},
+			{
+				"type": "docs",
+				"section": "Documentation",
+				"hidden": false
+			},
+			{
+				"type": "feat",
+				"section": "Features",
+				"hidden": false
+			},
+			{
+				"type": "fix",
+				"section": "Bug Fixes",
+				"hidden": false
+			},
+			{
+				"type": "perf",
+				"section": "Performance",
+				"hidden": false
+			},
+			{
+				"type": "refactor",
+				"section": "Refactoring",
+				"hidden": false
+			},
+			{
+				"type": "style",
+				"section": "Code Style",
+				"hidden": false
+			},
+			{
+				"type": "test",
+				"section": "Tests",
+				"hidden": false
+			}
+		]
+	},
+	"devDependencies": {
+		"c8": "^9.1.0",
+		"cno-test": "^0.0.1",
+		"eslint": "^9.0.0",
+		"extract-documentation-comments": "^0.4.2",
+		"hjson": "^3.2.2",
+		"npm-check-updates": "^16.14.18",
+		"standard-version": "^9.5.0"
+	}
+}
