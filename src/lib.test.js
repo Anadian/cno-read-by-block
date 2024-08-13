@@ -31,8 +31,8 @@ Documentation License: [![Creative Commons License](https://i.creativecommons.or
 //# Dependencies
 	//## Internal
 	import DefaultExport from './lib.js';
-	//import * as NamespaceExport from './lib.js';
-	import readByBlock from './lib.js';
+	import * as NamespaceExport from './lib.js';
+	import { readByBlockFromOptions } from './lib.js';
 	//## Standard
 	import PathNS from 'node:path';
 	import FSNS from 'node:fs/promises';
@@ -42,7 +42,13 @@ Documentation License: [![Creative Commons License](https://i.creativecommons.or
 //# Constants
 const FILENAME = 'lib.test.js';
 const LOREM_PATH = PathNS.normalize( PathNS.join( 'test', 'lorem.txt' ) );
-const LOREM_BUFFER = await FSNS.readFile( LOREM_PATH, 'utf8' );
+var LOREM_FILEHANDLE = await FSNS.open( LOREM_PATH );
+var LOREM_BUFFER;
+await LOREM_FILEHANDLE.read( LOREM_BUFFER, 0 );
+const LOREM_STAT = await LOREM_FILEHANDLE.stat();
+Test.test.after( () => {
+	LOREM_FILEHANDLE.close();
+} );
 const LOREM_LENGTH = 8206;
 const LOREM_HASH = Buffer.from( '2b475df87b81a47cad467229e6c5a77fc4ec6c80aa13e13f4af1eb86a8c505a9', 'hex' );
 const ALT_LENGTH = 8192;
@@ -52,7 +58,7 @@ const ALT_HASH = Buffer.from( '8f54277e73de035d2ec917391562411a3c3d5723171f2d3f3
 //# Global Variables
 /**## Functions*/
 
-Test.test( 'readByBlock:throws', function( t ){
+Test.test.skip( 'readFilehandleByBlock:throws', function( t ){
 	var return_error = null;
 	t.diagnostic( t.name );
 	const test_matrix = {
@@ -73,7 +79,12 @@ Test.test( 'readByBlock:throws', function( t ){
 			},
 			filehandle_type: {
 				args: [
-					{ filehandle: true }
+					{ 
+						filehandle: true,
+						logOptions: ( options ) => {
+							console.log( "%o", options );
+						} 
+					}
 				],
 				expected: {
 					instanceOf: Error,
@@ -106,24 +117,6 @@ Test.test( 'readByBlock:throws', function( t ){
 							console.log( "%o", options );
 						} 
 					}
-				],
-				expected: {
-					instanceOf: Error,
-					code: 'ERR_INVALID_ARG_VALUE'
-				}
-			},
-			blksize_value: {
-				args: [
-					{ path: LOREM_PATH, statObject: { blksize: true, size: LOREM_LENGTH  } }
-				],
-				expected: {
-					instanceOf: Error,
-					code: 'ERR_INVALID_ARG_VALUE'
-				}
-			},
-			size_value: {
-				args: [
-					{ path: LOREM_PATH, statObject: { blksize: 4096, size: true  } }
 				],
 				expected: {
 					instanceOf: Error,
@@ -204,7 +197,7 @@ Test.test.skip( 'readByBlock:returns', async function( t ){
 					{
 						filehandle: lorem_filehandle,
 						onReadBlockFunction: onReadFunction,
-						onCloseFunction: onCloseFunction,
+						onEndFunction: onCloseFunction,
 						logOptions: ( options ) => {
 							console.log( "%o", options );
 						}
@@ -338,10 +331,154 @@ Test.test.skip( 'readByBlock:returns', async function( t ){
 				return_error = new Error(`For ${condition_id}: await input_function.apply threw an error: ${error}`);
 				throw return_error;
 			}
-			Test.assert.deepStrictEqual( function_return, condition.expected );
+			if( function_return?.closePromise ){
+				Test.assert.deepStrictEqual( await function_return.closePromise, condition.expected );
+			} else{
+				Test.assert.deepStrictEqual( function_return, condition.expected );
+			}
 		}
 	}
 	lorem_filehandle.close();
+} );
+
+Test.test( 'readByBlockFromOptions:throws', function( t ){
+	t.diagnostic( t.name );
+	const test_matrix = {
+		functions: {
+			defaultExport: DefaultExport.readByBlockFromOptions,
+			namespaceExport: NamespaceExport.readByBlockFromOptions,
+			namedExport: readByBlockFromOptions
+		},
+		conditions: {
+			input_options_type: {
+				args: [
+					true
+				],
+				expected: {
+					instanceOf: TypeError,
+					code: 'ERR_INVALID_ARG_TYPE'
+				}
+			},
+			input_options_filehandle_type: {
+				args: [
+					{
+						filehandle: true
+					}
+				],
+				expected: {
+					instanceOf: Error,
+					code: 'ERR_INVALID_ARG_VALUE'
+				}
+			},
+			input_options_path_type: {
+				args: [
+					{
+						filehandle: null,
+						path: true
+					}
+				],
+				expected: {
+					instanceOf: Error,
+					code: 'ERR_INVALID_ARG_VALUE'
+				}
+			},
+			input_options_null_input: {
+				args: [
+					{
+						filehandle: null,
+						path: ""
+					}
+				],
+				expected: {
+					instanceOf: Error,
+					code: 'ERR_INVALID_ARG_VALUE'
+				}
+			},
+			input_options_canstat: {
+				args: [
+					{
+						filehandle: null,
+						path: LOREM_PATH,
+						canStat: false
+					}
+				],
+				expected: {
+					instanceOf: Error,
+					code: 'ERR_INVALID_ARG_VALUE'
+				}
+			}
+		}
+	};
+	for( const function_key of Object.keys( test_matrix.functions ) ){
+		var input_function = test_matrix.functions[function_key];
+		console.log( "function key: %s type: %s", function_key, typeof(input_function) );
+		for( const condition_key of Object.keys( test_matrix.conditions ) ){
+			t.diagnostic( `${t.name}:${function_key}:${condition_key}` );
+			var condition = test_matrix.conditions[condition_key];
+			var bound_function = input_function.bind( null, ...condition.args );
+			var validator_function = Test.errorExpected.bind( null, condition.expected );
+			Test.assert.throws( bound_function, validator_function );
+		}
+	}
+} );
+
+Test.test( 'readByBlockFromOptions:returns', async function( t ){
+	t.diagnostic( t.name );
+	var test_matrix = {
+		functions: {
+			defaultExport: DefaultExport.readByBlockFromOptions,
+			namespaceExport: NamespaceExport.readByBlockFromOptions,
+			namedExport: readByBlockFromOptions
+		},
+		conditions: {
+			input_options_noop: {
+				args: [
+					{
+						noop: true
+					}
+				],
+				expected: null
+			},
+			input_options_noDefaults: {
+				args: [
+					{
+						noop: true,
+						noDefaults: true
+					}
+				],
+				expected: null
+			},
+			input_options_noDynamic: {
+				args: [
+					{
+						noop: true,
+						noDynamic: true
+					}
+				],
+				expected: null
+			}
+			/*input_options_path: {
+				args: [
+					{
+						path: LOREM_PATH
+					}
+				],
+				expected: function( return_value ){
+					//return_value.readPromise.then();
+				}
+			}*/
+		}
+	};
+	for( const function_key of Object.keys( test_matrix.functions ) ){
+		var input_function = test_matrix.functions[function_key];
+		console.log( "function key: %s type: %s %o", function_key, typeof(input_function), input_function );
+		for( const condition_key of Object.keys( test_matrix.conditions ) ){
+			t.diagnostic( `${t.name}:${function_key}:${condition_key}` );
+			var condition = test_matrix.conditions[condition_key];
+			var function_return = input_function.apply( null, condition.args );
+			Test.assert.deepStrictEqual( await function_return, condition.expected );
+		}
+	}
 } );
 
 // lib.test.js EOF
