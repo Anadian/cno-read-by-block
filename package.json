@@ -92,12 +92,12 @@
 		]
 	},
 	"devDependencies": {
-		"c8": "^9.1.0",
-		"cno-test": "^0.0.1",
-		"eslint": "^9.0.0",
+		"c8": "^10.1.2",
+		"cno-test": "^0.1.1",
+		"eslint": "^9.9.0",
 		"extract-documentation-comments": "^0.4.2",
 		"hjson": "^3.2.2",
-		"npm-check-updates": "^16.14.18",
+		"npm-check-updates": "^17.0.6",
 		"standard-version": "^9.5.0"
 	}
 }
