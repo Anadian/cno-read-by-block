@@ -331,7 +331,7 @@ function readByBlockFromOptions( input_options = {} ){
 			state.filehandle = options.filehandle;
 			_return = Promise.resolve( state );
 		} else if( options.path != '' && typeof(options.path) === typeof('') ){
-			console.log( 'Going with options.path.' );
+			this?.logger?.log({file: FILENAME, function: FUNCTION_NAME, level: 'debug', message:  'Going with options.path.' });
 			_return = FSNS.open( options.path ).then(
 				( file_handle ) => {
 					state.filehandle = file_handle;
@@ -349,10 +349,13 @@ function readByBlockFromOptions( input_options = {} ){
 		} 
 		_return = _return.then(
 			( state ) => {
+				this?.logger?.log({file: FILENAME, function: FUNCTION_NAME, level: 'debug', message: 'Getting statObject'});
+				var stat_promise = null;
 				if( options.statObject != null && typeof(options.statObject) === typeof(null) ){
 					state.statObject = options.statObject;
+					stat_promise = Promise.resolve( state );
 				} else if( options.canStat === true ){
-					return state.filehandle.stat().then(
+					stat_promise = state.filehandle.stat().then(
 						( stat_object ) => {
 							state.statObject = stat_object;
 							return state;
@@ -367,11 +370,14 @@ function readByBlockFromOptions( input_options = {} ){
 					return_error.code = 'ERR_INVALID_ARG_VALUE';
 					throw return_error;
 				}
+				this?.logger?.log({file: FILENAME, function: FUNCTION_NAME, level: 'debug', message: 'Returnig stat promise.'});
+				return stat_promise;
 			},
 			null
 		); // statObject
 		_return = _return.then(
 			( state ) => {
+				this?.logger?.log({file: FILENAME, function: FUNCTION_NAME, level: 'debug', message: 'Setting blocksize.'});
 				if( options.blockSize > 0 && typeof(options.blockSize) === typeof(0) ){
 					state.blockSize = options.blockSize;
 				} else{
