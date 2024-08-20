@@ -50,7 +50,7 @@ const FILENAME = 'lib.js';
 | stat_object | object | A [stat object](https://nodejs.org/api/fs.html#class-fsstats).  |
 | start | number | The byte to begin reading on. \[default: 0\] |
 | end | number | Where to stop; values less than start are treated as "until the end of the file" \[default: -1\] |
-| onBlockReadFunction | function | A function to be "then'd" to for each block read. \[default: null\] |
+| onReadFunction | function | A function to be "then'd" to for each block read. \[default: null\] |
 
 #### Returns
 | type | description |
@@ -67,13 +67,14 @@ const FILENAME = 'lib.js';
 | --- | --- |
 | 0.0.1 | WIP |
 */
-function readByBlock( filehandle, stat_object, start = 0, end = -1, onBlockReadFunction = null/*, onBlockErrorFunction = null*/ ){
+function readByBlock( filehandle, stat_object, start = 0, end = -1, onReadFunction = null/*, onBlockErrorFunction = null*/ ){
 	const FUNCTION_NAME = 'readByBlock';
 	// Variables
 	//var arguments_array = Array.from(arguments);
 	var _return = null;
 	var return_error = null;
-	//this?.logger?.log({file: FILENAME, function: FUNCTION_NAME, level: 'debug', message: `received: ${arguments_array}`});
+	this?.logger?.log({file: FILENAME, function: FUNCTION_NAME, level: 'debug', message: `received filehandle: ${filehandle.fd}`});
+	const reference_fd = filehandle.fd;
 	// Parametre checks
 	/*if( typeof(filehandle) !== 'object' ){
 		return_error = new TypeError('Param "filehandle" is not of type object.');
@@ -116,9 +117,9 @@ function readByBlock( filehandle, stat_object, start = 0, end = -1, onBlockReadF
 		read_promise = read_promise.then(
 			() => {
 				return filehandle.read( read_u8array, 0, read_u8array.length, read_position ).then(
-					onBlockReadFunction,
+					onReadFunction,
 					/* c8 ignore start */ ( error ) => {
-						return_error = new Error( `For ${filehandle.fd}#${block_index}(${read_position}): filehandle.read threw an error: ${error}` );
+						return_error = new Error( `For ${filehandle.fd}(${reference_fd})#${block_index}(${read_position}): filehandle.read threw an error: ${error}` );
 						throw return_error;
 					} /* c8 ignore stop */
 				); //file_handle.read
@@ -134,97 +135,6 @@ function readByBlock( filehandle, stat_object, start = 0, end = -1, onBlockReadF
 } // readByBlock
 
 /**
-### readFilehandleByBlock
-> Reads the given filehandle by the given block size.
-
-#### Parametres
-| name | type | description |
-| --- | --- | --- |
-| input_options | object | Run-time options. \[default: null\] |
-
-##### `options` Properties
-| name | type | default | description |
-| noop | boolean | false | Skip primary functionality. |
-| noDefaults | boolean | false | Don't apply static default options. |
-| noDynamic | boolean | false | Don't apply dynamic default options. |
-| filehandle | object | null | The filehandle to read. |
-| blockSize | number | 0 | The block size in bytes. |
-| fileSize | number | 0 | The size of the file, or the total length to be read, in bytes. |
-| position | number | 0 | The position from which to start reading the file. |
-| onBlockReadFunction | function | null | A function to be then'd to with each block read from the filehandle. |
-
-#### Returns
-| type | description |
-| --- | --- |
-| Promise | A promise which resolves when all blocks have been read or rejects with any encountered errors. |
-
-#### Throws
-| code | type | condition |
-| --- | --- | --- |
-| 'ERR_INVALID_ARG_TYPE' | TypeError | Thrown if a given argument isn't of the correct type. |
-
-#### History
-| version | change |
-| --- | --- |
-| 0.0.1 | WIP |
-*/
-//function readFilehandleByBlock( input_options = null ){
-//	const FUNCTION_NAME = 'readFilehandleByBlock';
-//	const DEFAULT_OPTIONS = {
-//		noop: false, // Skip primary functionality.
-//		noDefaults: false, // Don't apply static default options.
-//		noDynamic: false, // Don't apply dynamic default options.
-//		filehandle: null, // The filehandle to read.
-//		blockSize: 0, // The block size in bytes.
-//		fileSize: 0, // The size of the file, or the total length to be read, in bytes.
-//		position: 0, // The position from which to start reading the file.
-//		onBlockReadFunction: null, // A function to be then'd to with each block read from the filehandle.
-//	};// Variables
-//	var arguments_array = Array.from(arguments);
-//	var _return = Promise.resolve( null );
-//	var return_error = null;
-//	var options = {};
-//	this?.logger?.log({file: FILENAME, function: FUNCTION_NAME, level: 'debug', message: `received: ${arguments_array}`});
-//	// Parametre checks
-//	if( typeof(input_options) !== 'object' ){
-//		return_error = new TypeError('Param "input_options" is not of type object.');
-//		return_error.code = 'ERR_INVALID_ARG_TYPE';
-//		throw return_error;
-//	}
-
-//	// Options
-//	if( input_options.noDefaults !== true ){
-//		options = Object.assign( options, DEFAULT_OPTIONS, input_options );
-//	} else{
-//		options = Object.assign( options, input_options );
-//	}
-//	if( options.noop !== true ){
-//		// Function
-//		var read_promise = Promise.resolve();
-//		var read_u8array = new Uint8Array( options.blockSize );
-//		const blocks = ( ( options.fileSize - options.position ) / read_u8array.length );
-//		for( var block_index = 0; block_index <= blocks; block_index++ ){
-//			var read_position = ( ( block_index * read_u8array.length ) + options.position );
-//			read_promise = read_promise.then(
-//				() => {
-//					return options.filehandle.read( read_u8array, 0, read_u8array.length, read_position ).then(
-//						options.onBlockReadFunction,
-//						/* c8 ignore start */ ( error ) => {
-//							return_error = new Error( `For ${options.filehandle.fd}#${block_index}: options.filehandle.read threw an error: ${error}` );
-//							throw return_error;
-//						} /* c8 ignore stop */
-//					); //file_handle.read
-//				},
-//				null
-//			); // read_promise
-//		} //for block_index
-//		_return = read_promise;
-//	} // noop
-//	// Return
-//	this?.logger?.log({file: FILENAME, function: FUNCTION_NAME, level: 'debug', message: `returned: ${_return}`});
-//	return _return;
-//} // readFilehandleByBlock
-/**
 ### readByBlockFromOptions
 > Reads a file, denoted either by an existing file handle or opened from the given path, asynchronously one optimally-sized IO block at a time.
 
@@ -239,7 +149,6 @@ function readByBlock( filehandle, stat_object, start = 0, end = -1, onBlockReadF
 | noDefaults | boolean | false | Don't apply static default options. |
 | noDynamic | boolean | false | Don't apply dynamic default options. |
 | filehandle | object | null | The filehandle to read, takes precedence over `options.path`. |
-| closeFileHandle | boolean | false | Whether to automatically close the file handle after it's read; by default, `false` when using a pre-existing file handle via `options.filehandle` and dynamically set to `true` if opening a new file from `options.path`. |
 | path | string | '' | The path of the file to open, only used if `options.filehandle` isn't specified. |
 | blockSize | number | NaN | The IO block size to use for read operations, if neither this nor `options.statObject.blksize` are specified, the file will be stat'd to get its optimal block size. |
 | fileSize | number | NaN | The number of bytes to read into the file. if neither this nor `options.statObject.size` are specified, the file will be stat'd to find its length. |
@@ -247,14 +156,24 @@ function readByBlock( filehandle, stat_object, start = 0, end = -1, onBlockReadF
 | canStat | boolean | true | Whether to `stat` the filehandle if either block size or file size can't be derived by the prior three options; when false, this function will reject the returned promise instead. |
 | start | number | 0 | The byte position in the file to starting reading. |
 | end | number | Number.POSITIVE_INFINITY | The byte position in the file to stop reading; if not specified the end of the file will be used. |
-| onBlockReadFunction | function | null | A function to be "then"'d with the return of each read call. |
+| onReadFunction | function | null | A function to be "then"'d with the return of each read call. |
 | onCloseFunction | function | null | A function to be "then"'d when closing a newly opened filehandle. |
 | onEndFnction | function | null | A function to be "then"'d when everything else is finished. |
 
 #### Returns
 | type | description |
 | --- | --- |
-| Promise | A promise which resolves with the filehandle when the entire file has been read. |
+| Promise | A promise which resolves to an object with the following properties. |
+
+##### Returned Object Properties
+| name | type | description |
+| --- | --- | --- |
+| filehandle | [Filehandle](https://nodejs.org/api/fs.html#class-filehandle) | The filehandle used or created; may be `null` if `options.closeFileHandle` is `true`. |
+| statObject | [Stats](https://nodejs.org/api/fs.html#class-fsstats) | The stats object; will be `null` if `options.canStat` is `false` and	`options.statObject` is not provided. |
+| blockSize | number | The final block size used for the read. |
+| fileSize | number | The size of the file in bytes. |
+| readPromise | Promise | A promise which resolves when the actual file reading is finished. |
+| close | function | An alias for `filehandle.close()`. |
 
 #### Throws
 | code | type | condition |
@@ -273,7 +192,7 @@ function readByBlockFromOptions( input_options = {} ){
 		noDefaults: false, // Don't apply static default options.
 		noDynamic: false, // Don't apply dynamic default options.
 		filehandle: null, // The filehandle to read, takes precedence over `options.path`.
-		closeFileHandle: false,
+		//closeFileHandle: false, // Any filehandle created will be closed to avoid extreneous cloning.
 		path: '', // The path of the file to open, only used if `options.filehandle` isn't specified.
 		blockSize: 0, // The IO block size to use for read operations, if neither this nor `options.statObject.blksize` are specified, the file will be stat'd to get its optimal block size.
 		fileSize: 0,
@@ -281,7 +200,7 @@ function readByBlockFromOptions( input_options = {} ){
 		canStat: true,
 		start: 0, // Position at which to start reading the file.
 		end: Number.POSITIVE_INFINITY,
-		onBlockReadFunction: null, // A function to be "then"'d with the return of each read call.
+		onReadFunction: null, // A function to be "then"'d with the return of each read call.
 		onCloseFunction: null,
 		onEndFunction: null,
 		logOptions: null
@@ -311,9 +230,9 @@ function readByBlockFromOptions( input_options = {} ){
 	if( input_options.noDefaults !== true ){
 		if( input_options.noDynamic !== true ){
 			var dynamic_defaults = {};
-			if( input_options.filehandle == null ){
+			/*if( input_options.filehandle == null ){
 				dynamic_defaults.closeFileHandle = true;
-			}
+			}*/
 			options = Object.assign( {}, DEFAULT_OPTIONS, dynamic_defaults, input_options );
 		} else{
 			options = Object.assign( {}, DEFAULT_OPTIONS, input_options );
@@ -334,6 +253,7 @@ function readByBlockFromOptions( input_options = {} ){
 			this?.logger?.log({file: FILENAME, function: FUNCTION_NAME, level: 'debug', message:  'Going with options.path.' });
 			_return = FSNS.open( options.path ).then(
 				( file_handle ) => {
+					this?.logger?.log({file: FILENAME, function: FUNCTION_NAME, level: 'debug', message: `Opened filehandle: ${file_handle.fd}`});
 					state.filehandle = file_handle;
 					return state;
 				},
@@ -349,7 +269,7 @@ function readByBlockFromOptions( input_options = {} ){
 		} 
 		_return = _return.then(
 			( state ) => {
-				this?.logger?.log({file: FILENAME, function: FUNCTION_NAME, level: 'debug', message: 'Getting statObject'});
+				this?.logger?.log({file: FILENAME, function: FUNCTION_NAME, level: 'debug', message: `Getting statObject; filehandle: ${state.filehandle.fd}`});
 				var stat_promise = null;
 				if( options.statObject != null && typeof(options.statObject) === typeof(null) ){
 					state.statObject = options.statObject;
@@ -368,6 +288,8 @@ function readByBlockFromOptions( input_options = {} ){
 				} else{
 					return_error = new Error(`Error: "options.statObject" is null but "options.canStat" is not true.`);
 					return_error.code = 'ERR_INVALID_ARG_VALUE';
+					this?.logger?.log({file: FILENAME, function: FUNCTION_NAME, level: 'debug', message: `Closing filehandle: ${state.filehandle.fd}`});
+					state.filehandle.close();
 					throw return_error;
 				}
 				this?.logger?.log({file: FILENAME, function: FUNCTION_NAME, level: 'debug', message: 'Returnig stat promise.'});
@@ -388,29 +310,44 @@ function readByBlockFromOptions( input_options = {} ){
 				} else{
 					state.fileSize = state.statObject.size;
 				}
+				return state;
 			},
 			null
 		);
 		_return = _return.then(
 			( state ) => {
-				state.readPromise = readByBlock( state.filehandle, { blksize: state.blockSize, size: state.fileSize }, options.start, options.end, options.onReadBlockFunction );
+				state.readPromise = readByBlock.call( { logger: this.logger }, state.filehandle, { blksize: state.blockSize, size: state.fileSize }, options.start, options.end, options.onReadFunction );
 				return state;
 			},
 			null
+		).then(
+			null,
+			( error ) => {
+				this?.logger?.log({file: FILENAME, function: FUNCTION_NAME, level: 'error', message: `readPromise rejected with error: ${error}`});
+				throw error;
+			}
 		);
-		if( options.closeFileHandle === true ){
+		if( options.filehandle == null ){ // Close filehandle we created.
 			_return = _return.then(
 				( state ) => {
-					state.closePromise = state.filehandle.close().then(
-						options.onCloseFunction,
-						/* c8 ignore start */ ( error ) => {
-							return_error = new Error( `For ${state.filehandle.fd}: file_handle.close threw an error: ${error}` );
-							throw return_error;
-						} /* c8 ignore stop */
+					return state.readPromise.then(
+						() => {
+							state.closePromise = state.filehandle.close().then(
+								options.onCloseFunction,
+								/* c8 ignore start */ ( error ) => {
+									return_error = new Error( `For ${state.filehandle.fd}: file_handle.close threw an error: ${error}` );
+									throw return_error;
+								} /* c8 ignore stop */
+							);
+							return state;
+						},
+						null
 					);
-					return state;
 				},
-				null
+				( error ) => {
+					this?.logger?.log({file: FILENAME, function: FUNCTION_NAME, level: 'error', message: `${error}`});
+					throw error;
+				}
 			);
 		} // closeFileHandle
 		if( typeof(options.onEndFunction) === 'function' ){
