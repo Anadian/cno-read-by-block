@@ -222,11 +222,79 @@ Test.test( 'readByBlockFromOptions', async function( t ){
 			path: LOREM_PATH,
 			//closeFileHandle: false,
 			logOptions: ( options ) =>{
-				console.log( "path options: %o", options );
+				console.log( "path_test options: %o", options );
 			}
 		}
 	);
 	await state.readPromise;
+	/*await readByBlockFromOptions.call(
+		{ 
+			logger: { 
+				log: function( message_object ){
+					console.log( "%s: %s: %s: %s", 'filehandle_test', message_object.function, message_object.level, message_object.message );
+				}
+			} 
+		},
+		{
+			filehandle: state.filehandle,
+			statObject: state.statObject,
+			start: 0,
+			logOptions: ( options ) => {
+				console.log( "filehandle_test options: %o", options );
+			}
+		}
+	).then(
+		( returned_object ) => {
+			return returned_object.readPromise;
+		},
+		null
+	);
+	await readByBlockFromOptions.call(
+		{ 
+			logger: { 
+				log: function( message_object ){
+					console.log( "%s: %s: %s: %s", 'late-start test', message_object.function, message_object.level, message_object.message );
+				}
+			} 
+		},
+		{
+			filehandle: state.filehandle,
+			blockSize: state.statObject.blksize,
+			fileSize: state.statObject.size,
+			start: 512,
+			logOptions: ( options ) => {
+				console.log( "late-start test options: %o", options );
+			}
+		}
+	).then(
+		( returned_object ) => {
+			return returned_object.readPromise;
+		},
+		null
+	);
+	await readByBlockFromOptions.call(
+		{ 
+			logger: { 
+				log: function( message_object ){
+					console.log( "%s: %s: %s: %s", 'closeFileHandle_test', message_object.function, message_object.level, message_object.message );
+				}
+			} 
+		},
+		{
+			filehandle: state.filehandle,
+			statObject: state.statObject,
+			start: 0,
+			closeFileHandle: true,
+			logOptions: ( options ) => {
+				console.log( "closeFileHandle_test options: %o", options );
+			}
+		}
+	).then(
+		( returned_object ) => {
+			return returned_object.readPromise;
+		},
+		null
+	);
 	/*
 	await FSNS.open( LOREM_PATH ).then(
 		( filehandle ) => {

@@ -149,6 +149,7 @@ function readByBlock( filehandle, stat_object, start = 0, end = -1, onReadFuncti
 | noDefaults | boolean | false | Don't apply static default options. |
 | noDynamic | boolean | false | Don't apply dynamic default options. |
 | filehandle | object | null | The filehandle to read, takes precedence over `options.path`. |
+| closeFileHandle | boolean | false | Whether to close the filehandle immediately after reading is finished; dynamically defaults to `true` when `options.filehandle` is `null`. |
 | path | string | '' | The path of the file to open, only used if `options.filehandle` isn't specified. |
 | blockSize | number | NaN | The IO block size to use for read operations, if neither this nor `options.statObject.blksize` are specified, the file will be stat'd to get its optimal block size. |
 | fileSize | number | NaN | The number of bytes to read into the file. if neither this nor `options.statObject.size` are specified, the file will be stat'd to find its length. |
@@ -158,7 +159,7 @@ function readByBlock( filehandle, stat_object, start = 0, end = -1, onReadFuncti
 | end | number | Number.POSITIVE_INFINITY | The byte position in the file to stop reading; if not specified the end of the file will be used. |
 | onReadFunction | function | null | A function to be "then"'d with the return of each read call. |
 | onCloseFunction | function | null | A function to be "then"'d when closing a newly opened filehandle. |
-| onEndFnction | function | null | A function to be "then"'d when everything else is finished. |
+| onEndFnction | function | null | \[Removed\] A function to be "then"'d when everything else is finished. |
 
 #### Returns
 | type | description |
@@ -192,7 +193,7 @@ function readByBlockFromOptions( input_options = {} ){
 		noDefaults: false, // Don't apply static default options.
 		noDynamic: false, // Don't apply dynamic default options.
 		filehandle: null, // The filehandle to read, takes precedence over `options.path`.
-		//closeFileHandle: false, // Any filehandle created will be closed to avoid extreneous cloning.
+		closeFileHandle: false, // Any filehandle created will be closed to avoid extreneous cloning.
 		path: '', // The path of the file to open, only used if `options.filehandle` isn't specified.
 		blockSize: 0, // The IO block size to use for read operations, if neither this nor `options.statObject.blksize` are specified, the file will be stat'd to get its optimal block size.
 		fileSize: 0,
@@ -230,9 +231,9 @@ function readByBlockFromOptions( input_options = {} ){
 	if( input_options.noDefaults !== true ){
 		if( input_options.noDynamic !== true ){
 			var dynamic_defaults = {};
-			/*if( input_options.filehandle == null ){
+			if( input_options.filehandle == null ){
 				dynamic_defaults.closeFileHandle = true;
-			}*/
+			}
 			options = Object.assign( {}, DEFAULT_OPTIONS, dynamic_defaults, input_options );
 		} else{
 			options = Object.assign( {}, DEFAULT_OPTIONS, input_options );
@@ -327,9 +328,10 @@ function readByBlockFromOptions( input_options = {} ){
 				throw error;
 			}
 		);
-		if( options.filehandle == null ){ // Close filehandle we created.
+		if( options.closeFileHandle === true ){ // Close filehandle we created.
 			_return = _return.then(
 				( state ) => {
+					this?.logger?.log({file: FILENAME, function: FUNCTION_NAME, level: 'debug', message: `Closing filehandle: ${state.filehandle.fd}`});
 					return state.readPromise.then(
 						() => {
 							state.closePromise = state.filehandle.close().then(
@@ -350,7 +352,16 @@ function readByBlockFromOptions( input_options = {} ){
 				}
 			);
 		} // closeFileHandle
-		if( typeof(options.onEndFunction) === 'function' ){
+		_return = _return.then(
+			( state ) => {
+				state.close = () => {
+					return state.filehandle.close();
+				};
+				return state;
+			},
+			null
+		);
+		/*if( typeof(options.onEndFunction) === 'function' ){
 			_return = _return.then(
 				( state ) => {
 					state.endPromise = options.onEndFunction( state );
@@ -358,7 +369,7 @@ function readByBlockFromOptions( input_options = {} ){
 				},
 				null
 			);
-		} // onEndFunction
+		} // onEndFunction*/
 	} // noop
 	// Return
 	this?.logger?.log({file: FILENAME, function: FUNCTION_NAME, level: 'debug', message: `returned: ${_return}`});
