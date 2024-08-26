@@ -42,7 +42,7 @@ Documentation License: [![Creative Commons License](https://i.creativecommons.or
 //# Constants
 const FILENAME = 'lib.test.js';
 const LOREM_PATH = PathNS.normalize( PathNS.join( 'test', 'lorem.txt' ) );
-var LOREM_FILEHANDLE = await FSNS.open( LOREM_PATH );
+/*var LOREM_FILEHANDLE = await FSNS.open( LOREM_PATH );
 console.log( "global opened: %d", LOREM_FILEHANDLE.fd ); 
 var LOREM_BUFFER;
 await LOREM_FILEHANDLE.read( LOREM_BUFFER, 0 );
@@ -54,7 +54,7 @@ Test.test.after( () => {
 const LOREM_LENGTH = 8206;
 const LOREM_HASH = Buffer.from( '2b475df87b81a47cad467229e6c5a77fc4ec6c80aa13e13f4af1eb86a8c505a9', 'hex' );
 const ALT_LENGTH = 8192;
-const ALT_HASH = Buffer.from( '8f54277e73de035d2ec917391562411a3c3d5723171f2d3f3dc50f0b81a2bb86', 'hex' );
+const ALT_HASH = Buffer.from( '8f54277e73de035d2ec917391562411a3c3d5723171f2d3f3dc50f0b81a2bb86', 'hex' );*/
 //## Errors
 
 //# Global Variables
@@ -70,6 +70,7 @@ Test.test( 'readByBlockFromOptions', async function( t ){
 		conditions: {
 			input_options_type: {
 				skip: false,
+				debug: false,
 				success: false, //true: deepStrictEqual; false: throws
 				promise: false, //true: await resolve then deepStrictEqual; false: rejects
 				args: [
@@ -82,6 +83,7 @@ Test.test( 'readByBlockFromOptions', async function( t ){
 			},
 			input_options_filehandle_type: {
 				skip: false,
+				debug: false,
 				success: false,
 				promise: false,
 				args: [
@@ -96,6 +98,7 @@ Test.test( 'readByBlockFromOptions', async function( t ){
 			},
 			input_options_path_type: {
 				skip: false,
+				debug: false,
 				success: false,
 				promise: false,
 				args: [
@@ -111,6 +114,7 @@ Test.test( 'readByBlockFromOptions', async function( t ){
 			},
 			input_options_null_input: {
 				skip: false,
+				debug: false,
 				success: false,
 				promise: false,
 				args: [
@@ -126,6 +130,7 @@ Test.test( 'readByBlockFromOptions', async function( t ){
 			},
 			input_options_canstat: {
 				skip: false,
+				debug: false,
 				success: false,
 				promise: true,
 				args: [
@@ -145,6 +150,7 @@ Test.test( 'readByBlockFromOptions', async function( t ){
 			},
 			input_options_noop: {
 				skip: false,
+				debug: false,
 				success: true,
 				promise: false,
 				args: [
@@ -156,6 +162,7 @@ Test.test( 'readByBlockFromOptions', async function( t ){
 			},
 			input_options_noDefaults: {
 				skip: false,
+				debug: false,
 				success: true,
 				promise: false,
 				args: [
@@ -168,6 +175,7 @@ Test.test( 'readByBlockFromOptions', async function( t ){
 			},
 			input_options_noDynamic: {
 				skip: false,
+				debug: false,
 				success: true,
 				promise: false,
 				args: [
@@ -188,17 +196,21 @@ Test.test( 'readByBlockFromOptions', async function( t ){
 			var condition = test_matrix.conditions[condition_key];
 			if( condition.skip !== true ){
 				t.diagnostic( test_id );
-				var bound_function = input_function.bind( {
-					logger: { 
-						log: function( message_object ){
-							console.log( "%s: %s: %s: %s", test_id, message_object.function, message_object.level, message_object.message );
+				var this_object = null;
+				if( condition.debug === true ){
+					this_object = {
+						logger: { 
+							log: function( message_object ){
+								console.log( "%s: %s: %s: %s", test_id, message_object.function, message_object.level, message_object.message );
+							}
 						}
-					}
-				}, ...condition.args );
+					};
+				}
+				var bound_function = input_function.bind( this_object, ...condition.args );
 				if( condition.success === true ){
 					Test.assert.deepStrictEqual( await bound_function(), condition.expected, test_id );
 				} else{
-					var validator_function = Test.errorExpected.bind( { logger: { log: console.log } }, condition.expected );
+					var validator_function = Test.errorExpected.bind( this_object, condition.expected );
 					if( condition.promise === true ){
 						await Test.assert.rejects( bound_function(), validator_function, test_id );
 					} else{
@@ -220,14 +232,14 @@ Test.test( 'readByBlockFromOptions', async function( t ){
 		},
 		{
 			path: LOREM_PATH,
-			//closeFileHandle: false,
+			closeFileHandle: false,
 			logOptions: ( options ) =>{
 				console.log( "path_test options: %o", options );
 			}
 		}
 	);
 	await state.readPromise;
-	/*await readByBlockFromOptions.call(
+	await readByBlockFromOptions.call(
 		{ 
 			logger: { 
 				log: function( message_object ){
@@ -295,129 +307,6 @@ Test.test( 'readByBlockFromOptions', async function( t ){
 		},
 		null
 	);
-	/*
-	await FSNS.open( LOREM_PATH ).then(
-		( filehandle ) => {
-			console.log( "filehandle opened: %d", filehandle.fd );
-			filehandle.on( 'close', () => {
-				console.log( "onClose %d", filehandle.fd );
-			} );
-			return readByBlockFromOptions.call(
-				{ 
-					logger: { 
-						log: function( message_object ){
-							console.log( "%s: %s: %s: %s", 'filehandle_test', message_object.function, message_object.level, message_object.message );
-						}
-					} 
-				},
-				{
-					filehandle: filehandle,
-					statObject: state.statObject,
-					start: 0,
-					logOptions: ( options ) => {
-						console.log( "filehandle options: %o", options );
-					}
-				}
-			).then(
-				( return_value ) => {
-					return return_value.readPromise.then(
-						() => {
-							console.log( "Closing %d", filehandle.fd );
-							filehandle.close();
-						},
-						null
-					);
-				},
-				null
-			);
-		},
-		null
-	);
-	await FSNS.open( LOREM_PATH ).then(
-		( filehandle ) => {
-			console.log( "late-start opened: %d", filehandle.fd );
-			filehandle.on( 'close', () => {
-				console.log( "onClose %d", filehandle.fd );
-			} );
-			return readByBlockFromOptions.call(
-				{
-					logger: {
-						log: function( message_object ){
-							console.log( "%s: %s: %s: %s", 'filehandle_test', message_object.function, message_object.level, message_object.message );
-						}
-					}
-				},
-				{
-					filehandle: filehandle,
-					blockSize: state.statObject.blksize,
-					fileSize: state.statObject.size,
-					start: 512,
-					logOptions: ( options ) =>{
-						console.log( "late-start options: %o", options );
-					},
-					onReadFunction: ( read_buffer ) => {
-						console.log( 'Yo from onReadFunction.' );
-					},
-					onCloseFunction: () => {
-						console.log( 'Yo from onCloseFunction.' );
-					},
-					onEndFunction: () => {
-						console.log( 'Yo from onEndFunction.' );
-					}
-				}
-			).then(
-				( return_value ) => {
-					return return_value.readPromise.then(
-						() => {
-							console.log( "Closing %d", filehandle.fd );
-							filehandle.close();
-						},
-						null
-					);
-				},
-				null
-			);
-		},
-		null
-	);
-	await FSNS.open( LOREM_PATH ).then(
-		( filehandle ) => {
-			console.log( "restart opened: %d", filehandle.fd );
-			filehandle.on( 'close', () => {
-				console.log( "onClose %d", filehandle.fd );
-			} );
-			return readByBlockFromOptions.call( { logger: { log: console.log } }, {
-				filehandle: filehandle,
-				statObject: state.statObject,
-				closeFileHandle: true,
-				start: 0,
-				logOptions: ( options ) =>{
-					console.log( "closing filehandle options: %o", options );
-				},
-				onReadFunction: ( read_buffer ) => {
-					console.log( 'Yo from onReadFunction 2.' );
-				},
-				onCloseFunction: () => {
-					console.log( 'Yo from onCloseFunction 2.' );
-				},
-				onEndFunction: () => {
-					console.log( 'Yo from onEndFunction. 2' );
-				}
-			} ).then(
-				( return_value ) => {
-					return return_value.readPromise.then(
-						() => {
-							console.log( "Closing %d", filehandle.fd );
-							filehandle.close();
-						},
-						null
-					);
-				},
-				null
-			);
-		},
-		null
-	);*/
 } );
 
 // lib.test.js EOF
