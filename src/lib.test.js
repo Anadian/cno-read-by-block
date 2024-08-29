@@ -42,7 +42,7 @@ Documentation License: [![Creative Commons License](https://i.creativecommons.or
 //# Constants
 const FILENAME = 'lib.test.js';
 const LOREM_PATH = PathNS.normalize( PathNS.join( 'test', 'lorem.txt' ) );
-/*var LOREM_FILEHANDLE = await FSNS.open( LOREM_PATH );
+var LOREM_FILEHANDLE = await FSNS.open( LOREM_PATH );
 console.log( "global opened: %d", LOREM_FILEHANDLE.fd ); 
 var LOREM_BUFFER;
 await LOREM_FILEHANDLE.read( LOREM_BUFFER, 0 );
@@ -54,7 +54,7 @@ Test.test.after( () => {
 const LOREM_LENGTH = 8206;
 const LOREM_HASH = Buffer.from( '2b475df87b81a47cad467229e6c5a77fc4ec6c80aa13e13f4af1eb86a8c505a9', 'hex' );
 const ALT_LENGTH = 8192;
-const ALT_HASH = Buffer.from( '8f54277e73de035d2ec917391562411a3c3d5723171f2d3f3dc50f0b81a2bb86', 'hex' );*/
+const ALT_HASH = Buffer.from( '8f54277e73de035d2ec917391562411a3c3d5723171f2d3f3dc50f0b81a2bb86', 'hex' );
 //## Errors
 
 //# Global Variables
@@ -222,12 +222,22 @@ Test.test( 'readByBlockFromOptions', async function( t ){
 			}
 		}
 	}
+	var hasher = CryptoNS.createHash( 'sha256' );
+	var log_function = function( name, message_object ){
+		console.log( "%s: %s: %s: %s", name, message_object.function, message_object.level, message_object.message );
+	};
+	var onReadFunction = function( block_object ){
+		this?.logger?.log({file: FILENAME, function: 'filehandle_test', level: 'debug', message: `bytes read: ${block_object.bytesRead} buffer: ${block_object.buffer}`});
+		hasher.update( block_object.buffer.subarray( 0, block_object.bytesRead ) );
+	};
+	var onEndFunction = function( state ){
+		this?.logger?.log({file: FILENAME, function: 'filehandle_test', level: 'debug', message: 'onEndFunction'});
+		return hasher.digest();
+	};
 	var state = await readByBlockFromOptions.call(
 		{ 
 			logger: { 
-				log: function( message_object ){
-					console.log( "%s: %s: %s: %s", 'path_test', message_object.function, message_object.level, message_object.message );
-				}
+				log: log_function.bind( null, 'path_test' )
 			}
 		},
 		{
@@ -242,32 +252,52 @@ Test.test( 'readByBlockFromOptions', async function( t ){
 	await readByBlockFromOptions.call(
 		{ 
 			logger: { 
-				log: function( message_object ){
-					console.log( "%s: %s: %s: %s", 'filehandle_test', message_object.function, message_object.level, message_object.message );
-				}
-			} 
+				log: log_function.bind( null, 'filehandle_test' ) 
+			}
 		},
 		{
 			filehandle: state.filehandle,
 			statObject: state.statObject,
 			start: 0,
+			onReadFunction: onReadFunction.bind( 
+				{ 
+					logger: { 
+						log: log_function.bind( null, 'filehandle_test' ) 
+					}
+				}
+			),
+			onEndFunction: onEndFunction.bind( 
+				{ 
+					logger: { 
+						log: log_function.bind( null, 'filehandle_test' ) 
+					}
+				}
+			),
 			logOptions: ( options ) => {
 				console.log( "filehandle_test options: %o", options );
 			}
 		}
 	).then(
 		( returned_object ) => {
-			return returned_object.readPromise;
+			return returned_object.readPromise.then(
+				() => {
+					return returned_object.endPromise;
+				},
+				null
+			);
+		},
+		null
+	).then(
+		( hash_digest_buffer ) => {
+			console.log({file: FILENAME, function: 'filehandle_test', level: 'debug', message: `hash_digest_buffer: ${hash_digest_buffer.toString( 'hex' )}`});
 		},
 		null
 	);
 	await readByBlockFromOptions.call(
 		{ 
 			logger: { 
-				log: function( message_object ){
-					console.log( "%s: %s: %s: %s", 'late-start test', message_object.function, message_object.level, message_object.message );
-				}
-			} 
+				log: log_function.bind( null, 'late-start_test' )
+			}
 		},
 		{
 			filehandle: state.filehandle,
@@ -287,10 +317,8 @@ Test.test( 'readByBlockFromOptions', async function( t ){
 	await readByBlockFromOptions.call(
 		{ 
 			logger: { 
-				log: function( message_object ){
-					console.log( "%s: %s: %s: %s", 'closeFileHandle_test', message_object.function, message_object.level, message_object.message );
-				}
-			} 
+				log: log_function.bind( null, 'closeFileHandle_test' ) 
+			}
 		},
 		{
 			filehandle: state.filehandle,

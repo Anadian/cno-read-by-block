@@ -40,6 +40,70 @@ const FILENAME = 'lib.js';
 //# Global Variables
 /**## Functions*/
 /**
+### readOperation
+> \[Unsafe\] An atomic read operation.
+
+#### Parametres
+| name | type | description |
+| --- | --- | --- |
+| filehandle | object | Filehandle to read from. |
+| read_u8array | Uint8Array | A buffer to fill with the read data.  |
+| read_position | number | Where to begin reading.  |
+| onReadFunction | function | Function to be then'd to when the read operation is complete. \[default: null\] |
+
+#### Returns
+| type | description |
+| --- | --- |
+| Promise | A promise which resolves when the read operation is complete. |
+
+#### History
+| version | change |
+| --- | --- |
+| 0.0.1 | WIP |
+*/
+function readOperation( filehandle, read_u8array, read_position, onReadFunction = null ){
+	const FUNCTION_NAME = 'readOperation';
+	// Variables
+	//var arguments_array = Array.from(arguments);
+	var _return = null;
+	var return_error = null;
+	this?.logger?.log({file: FILENAME, function: FUNCTION_NAME, level: 'debug', message: `received: fd: ${filehandle.fd} read_position: ${read_position}`});
+	// Parametre checks
+	/*if( typeof(filehandle) !== 'object' ){
+		return_error = new TypeError('Param "filehandle" is not of type object.');
+		return_error.code = 'ERR_INVALID_ARG_TYPE';
+		throw return_error;
+	}
+	if( typeof(read_length) !== 'number' ){
+		return_error = new TypeError('Param "read_length" is not of type number.');
+		return_error.code = 'ERR_INVALID_ARG_TYPE';
+		throw return_error;
+	}
+	if( typeof(read_position) !== 'number' ){
+		return_error = new TypeError('Param "read_position" is not of type number.');
+		return_error.code = 'ERR_INVALID_ARG_TYPE';
+		throw return_error;
+	}
+	if( typeof(onReadFunction) !== 'function' ){
+		return_error = new TypeError('Param "onReadFunction" is not of type function.');
+		return_error.code = 'ERR_INVALID_ARG_TYPE';
+		throw return_error;
+	}*/
+
+	// Function
+	_return = filehandle.read( read_u8array, 0, read_u8array.length, read_position ).then(
+		onReadFunction,
+		/* c8 ignore start */ ( error ) => {
+			return_error = new Error( `For ${filehandle.fd}@${read_position}: filehandle.read threw an error: ${error}` );
+			throw return_error;
+		} /* c8 ignore stop */
+	);	
+	// Return
+	this?.logger?.log({file: FILENAME, function: FUNCTION_NAME, level: 'debug', message: `returned: ${_return}`});
+	return _return;
+} // readOperation
+
+/**
 ### readByBlock
 > readByBlock
 
@@ -111,21 +175,19 @@ function readByBlock( filehandle, stat_object, start = 0, end = -1, onReadFuncti
 		read_end = Math.min( end, stat_object.size );
 	}
 	const blocks = ( ( read_end - start ) / block_size );
-	var read_u8array = new Uint8Array( block_size );
+	this?.logger?.log({file: FILENAME, function: FUNCTION_NAME, level: 'debug', message: `blocks: ${blocks}`});
+	//var read_u8array = new Uint8Array( block_size );
 	for( var block_index = 0; block_index <= blocks; block_index++ ){
-		var read_position = ( ( block_index * read_u8array.length ) + start );
+		var read_position = ( ( block_index * block_size ) + start );
+		this?.logger?.log({file: FILENAME, function: FUNCTION_NAME, level: 'debug', message: `read_position: ${read_position}`});
+		var a_read_operation = readOperation.bind( { logger: this.logger }, filehandle, new Uint8Array(block_size), read_position, onReadFunction );
 		read_promise = read_promise.then(
-			() => {
-				return filehandle.read( read_u8array, 0, read_u8array.length, read_position ).then(
-					onReadFunction,
-					/* c8 ignore start */ ( error ) => {
-						return_error = new Error( `For ${filehandle.fd}(${reference_fd})#${block_index}(${read_position}): filehandle.read threw an error: ${error}` );
-						throw return_error;
-					} /* c8 ignore stop */
-				); //file_handle.read
-			},
-			null
-		); // read_promise
+			a_read_operation,
+			/* c8 ignore start */ ( error ) => {
+				return_error = new Error( `For ${filehandle.fd}(${reference_fd})#${block_index}(${read_position}): readOperation threw an error: ${error}` );
+				throw return_error;
+			} /* c8 ignore stop */
+		); // read_promise.then
 	} //for block_index
 	_return = read_promise;
 
@@ -159,7 +221,7 @@ function readByBlock( filehandle, stat_object, start = 0, end = -1, onReadFuncti
 | end | number | Number.POSITIVE_INFINITY | The byte position in the file to stop reading; if not specified the end of the file will be used. |
 | onReadFunction | function | null | A function to be "then"'d with the return of each read call. |
 | onCloseFunction | function | null | A function to be "then"'d when closing a newly opened filehandle. |
-| onEndFnction | function | null | \[Removed\] A function to be "then"'d when everything else is finished. |
+| onEndFnction | function | null | A function to be "then"'d when everything else is finished. |
 
 #### Returns
 | type | description |
@@ -175,6 +237,8 @@ function readByBlock( filehandle, stat_object, start = 0, end = -1, onReadFuncti
 | fileSize | number | The size of the file in bytes. |
 | readPromise | Promise | A promise which resolves when the actual file reading is finished. |
 | close | function | An alias for `filehandle.close()`. |
+| closePromise | Promise | A promise which resolves when the filehandle has successfully been closed or when reading is finished if `options.closeFileHandle` is false. |
+| endPromise | Promise | A promise which resolves when any reading and/or closing is finished. |
 
 #### Throws
 | code | type | condition |
@@ -328,48 +392,55 @@ function readByBlockFromOptions( input_options = {} ){
 				throw error;
 			}
 		);
-		if( options.closeFileHandle === true ){ // Close filehandle we created.
-			_return = _return.then(
-				( state ) => {
+		_return = _return.then( // convenience properties
+			( state ) => {
+				this?.logger?.log({file: FILENAME, function: FUNCTION_NAME, level: 'debug', message: `Adding convenience properties.`});
+				state.close = () => { // Adds state.close() convenience function.
 					this?.logger?.log({file: FILENAME, function: FUNCTION_NAME, level: 'debug', message: `Closing filehandle: ${state.filehandle.fd}`});
-					return state.readPromise.then(
+					return state.filehandle.close().then(
+						options.onCloseFunction,
+						/* c8 ignore start */ ( error ) => {
+							return_error = new Error( `For ${state.filehandle.fd}: file_handle.close threw an error: ${error}` );
+							throw return_error;
+						} /* c8 ignore stop */
+					).then(
 						() => {
-							state.closePromise = state.filehandle.close().then(
-								options.onCloseFunction,
-								/* c8 ignore start */ ( error ) => {
-									return_error = new Error( `For ${state.filehandle.fd}: file_handle.close threw an error: ${error}` );
-									throw return_error;
-								} /* c8 ignore stop */
-							);
+							this?.logger?.log({file: FILENAME, function: FUNCTION_NAME, level: 'debug', message: `Closed filehandle.`});
+							state.filehandle = null;
 							return state;
 						},
 						null
 					);
-				},
-				( error ) => {
-					this?.logger?.log({file: FILENAME, function: FUNCTION_NAME, level: 'error', message: `${error}`});
-					throw error;
+				}; // state.close
+				if( options.closeFileHandle === true ){ // Close filehandle we created.
+					this?.logger?.log({file: FILENAME, function: FUNCTION_NAME, level: 'debug', message: `Promising to close filehandle: ${state.filehandle.fd}`});
+					state.closePromise = state.readPromise.then(
+						() => {
+							return state.close();
+						},
+						null
+					);
+				} else{
+					this?.logger?.log({file: FILENAME, function: FUNCTION_NAME, level: 'debug', message: `Faking close promise.`});
+					state.closePromise = state.readPromise;
 				}
-			);
-		} // closeFileHandle
-		_return = _return.then(
-			( state ) => {
-				state.close = () => {
-					return state.filehandle.close();
-				};
+				if( typeof(options.onEndFunction) === 'function' ){
+					this?.logger?.log({file: FILENAME, function: FUNCTION_NAME, level: 'debug', message: `Adding real endPromise.`});
+					state.endPromise = state.readPromise.then(
+						options.onEndFunction.bind( { logger: this?.logger } ),
+						null
+					);
+				} else{
+					this?.logger?.log({file: FILENAME, function: FUNCTION_NAME, level: 'debug', message: `Adding fake endPromise.`});
+					state.endPromise = state.closePromise;
+				}
 				return state;
 			},
-			null
-		);
-		/*if( typeof(options.onEndFunction) === 'function' ){
-			_return = _return.then(
-				( state ) => {
-					state.endPromise = options.onEndFunction( state );
-					return state;
-				},
-				null
-			);
-		} // onEndFunction*/
+			( error ) => {
+				this?.logger?.log({file: FILENAME, function: FUNCTION_NAME, level: 'error', message: `${error}`});
+				throw error;
+			}
+		); // convenience properties
 	} // noop
 	// Return
 	this?.logger?.log({file: FILENAME, function: FUNCTION_NAME, level: 'debug', message: `returned: ${_return}`});
