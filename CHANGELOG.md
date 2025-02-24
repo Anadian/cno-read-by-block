@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [0.0.2](https://github.com/Anadian/cno-read-by-block/compare/v0.0.1...v0.0.2) (2025-02-24)
+
+
+### Documentation
+
+* Added NPM version badge to README. ([6ca40fc](https://github.com/Anadian/cno-read-by-block/commit/6ca40fccff5bfe79b237af07a927f79a40315f3a))
+
 ### 0.0.1 (2025-02-24)
 
 
