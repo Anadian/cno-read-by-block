@@ -5,6 +5,7 @@
 [![License](https://img.shields.io/github/license/Anadian/cno-read-by-block)](https://github.com/Anadian/cno-read-by-block/blob/main/LICENSE)
 [![ci](https://github.com/Anadian/cno-read-by-block/actions/workflows/ci.yml/badge.svg)](https://github.com/Anadian/cno-read-by-block/actions/workflows/ci.yml)
 [![Coverage Status](https://coveralls.io/repos/github/Anadian/cno-read-by-block/badge.svg?branch=main)](https://coveralls.io/github/Anadian/cno-read-by-block?branch=main)
+[![NPM Version](https://img.shields.io/npm/v/cno-read-by-block)](https://www.npmjs.com/package/cno-read-by-block)
 
 > Micropackage: use NodeJS's promise API to asynchronously read a file by its optimal blocksize.
 # Table of Contents
