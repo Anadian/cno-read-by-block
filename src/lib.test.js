@@ -52,8 +52,10 @@ Test.test.after( () => {
 	console.log( "Closing %d", LOREM_FILEHANDLE.fd );
 	LOREM_FILEHANDLE.close();
 } );
-const LOREM_LENGTH = 8206;
-const LOREM_HASH = Buffer.from( '2b475df87b81a47cad467229e6c5a77fc4ec6c80aa13e13f4af1eb86a8c505a9', 'hex' );
+// const LOREM_LENGTH = 8206;
+// const LOREM_HASH = Buffer.from( '2b475df87b81a47cad467229e6c5a77fc4ec6c80aa13e13f4af1eb86a8c505a9', 'hex' );
+const LOREM_LENGTH = 8207;
+const LOREM_HASH = Buffer.from( '41a9d8b9bf423f868eeb883fb65ca8bf74320a10cdfca5c8c58928d573645704', 'hex' );
 const ALT_LENGTH = 8192;
 const ALT_HASH = Buffer.from( 'd19c80b61107b390c4a66422bd2bed6f3f8f71e0fb4311054539dd1c79c0f16d', 'hex' );
 //## Errors
