@@ -177,7 +177,7 @@ function readByBlock( filehandle, stat_object, start = 0, end = -1, onReadFuncti
 	const blocks = ( ( read_end - start ) / block_size );
 	this?.logger?.log({file: FILENAME, function: FUNCTION_NAME, level: 'debug', message: `blocks: ${blocks}`});
 	//var read_u8array = new Uint8Array( block_size );
-	for( var block_index = 0; block_index <= blocks; block_index++ ){
+	for( var block_index = 0; block_index < blocks; block_index++ ){
 		var read_position = ( ( block_index * block_size ) + start );
 		this?.logger?.log({file: FILENAME, function: FUNCTION_NAME, level: 'debug', message: `read_position: ${read_position}`});
 		var a_read_operation = readOperation.bind( { logger: this.logger }, filehandle, new Uint8Array(block_size), read_position, onReadFunction );
@@ -381,7 +381,7 @@ function readByBlockFromOptions( input_options = {} ){
 		);
 		_return = _return.then(
 			( state ) => {
-				state.readPromise = readByBlock.call( { logger: this.logger }, state.filehandle, { blksize: state.blockSize, size: state.fileSize }, options.start, options.end, options.onReadFunction );
+				state.readPromise = readByBlock.call( { logger: this?.logger }, state.filehandle, { blksize: state.blockSize, size: state.fileSize }, options.start, options.end, options.onReadFunction );
 				return state;
 			},
 			null
@@ -421,6 +421,7 @@ function readByBlockFromOptions( input_options = {} ){
 						null
 					);
 				} else{
+					//this?.logger?.log({file: FILENAME, function: FUNCTION_NAME, level: 'warn', message: 'Reusing file handle likely won\'t work to a persistent bug in Node.'});
 					this?.logger?.log({file: FILENAME, function: FUNCTION_NAME, level: 'debug', message: `Faking close promise.`});
 					state.closePromise = state.readPromise;
 				}
