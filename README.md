@@ -14,8 +14,19 @@
 - [License](#License)
 # Background
 # Install
+Available on the [npm registry](https://www.npmjs.com/package/cno-test) as `cno-read-by-block`.
+Adding it to project using [pnpm](https://pnpm.io/cli/add):
+```sh
+pnpm add --save cno-read-by-block
+```
+It can, of course, also be installed by [npm](https://docs.npmjs.com/cli/v8/commands/npm-install) or [yarn](https://yarnpkg.com/getting-started/usage) using the normal methods.
 # Usage
+```js
+import ReadByBlock from 'cno-read-by-block'; // Default export is a full "namespace".
+import { ReadByBlockFromOptions } from 'cno-read-by-block'; // Just one function.
+```
 # API
+See [API.md](API.md) for full API.
 # Contributing
 Changes are tracked in [CHANGELOG.md](CHANGELOG.md).
 # License
