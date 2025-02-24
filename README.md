@@ -3,6 +3,8 @@
 [![Semantic Versioning 2.0.0](https://img.shields.io/badge/semver-2.0.0-brightgreen?style=flat-square)](https://semver.org/spec/v2.0.0.html)
 [![Conventional Commits](https://img.shields.io/badge/Conventional%20Commits-1.0.0-yellow.svg?style=flat-square)](https://conventionalcommits.org)
 [![License](https://img.shields.io/github/license/Anadian/cno-read-by-block)](https://github.com/Anadian/cno-read-by-block/blob/main/LICENSE)
+[![ci](https://github.com/Anadian/cno-read-by-block/actions/workflows/ci.yml/badge.svg)](https://github.com/Anadian/cno-read-by-block/actions/workflows/ci.yml)
+[![Coverage Status](https://coveralls.io/repos/github/Anadian/cno-read-by-block/badge.svg?branch=main)](https://coveralls.io/github/Anadian/cno-read-by-block?branch=main)
 
 > Micropackage: use NodeJS's promise API to asynchronously read a file by its optimal blocksize.
 # Table of Contents
