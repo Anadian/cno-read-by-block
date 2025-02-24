@@ -1,6 +1,6 @@
 {
 	"name": "cno-read-by-block",
-	"version": "0.0.0",
+	"version": "0.0.1",
 	"description": "Micropackage: use NodeJS's promise API to asynchronously read a file by its optimal blocksize.",
 	"repository": {
 		"type": "git",
