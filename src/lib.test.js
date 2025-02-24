@@ -252,7 +252,7 @@ Test.test( 'readByBlockFromOptions', async function( t ){
 			},
 			early_end_test: {
 				skip: false,
-				debug: false,
+				debug: true,
 				success: true,
 				args: [
 					{
