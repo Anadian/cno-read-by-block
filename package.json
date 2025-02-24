@@ -37,7 +37,7 @@
 		"coverage-report": "c8 report -r=text-lcov > coverage/lcov.txt",
 		"do-ci": "pnpm coverage && pnpm coverage-report",
 		"lint": "eslint ./src/main.js",
-		"generate-docs": "scripts/generate-docs.js",
+		"generate-docs": "extract-documentation-comments -I src/lib.js -O ./API.md",
 		"update-config": "hjson -j ci/github-actions.hjson | json2yaml -o .github/workflows/ci.yml && git change 'chore: Updated GitHub Actions.'",
 		"update-deps": "npm-check-updates -u",
 		"release": "standard-version",

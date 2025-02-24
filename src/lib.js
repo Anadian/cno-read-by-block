@@ -207,6 +207,7 @@ function readByBlock( filehandle, stat_object, start = 0, end = -1, onReadFuncti
 
 ##### `options` Properties
 | name | type | default | description |
+| --- | --- | --- | --- |
 | noop | boolean | false | Skip primary functionality. |
 | noDefaults | boolean | false | Don't apply static default options. |
 | noDynamic | boolean | false | Don't apply dynamic default options. |
